@@ -33,6 +33,7 @@ public class RunThread implements Runnable {
     }
 
     // See http://en.wikipedia.org/wiki/OBD-II_PIDs#Standard_PIDs
+    // See http://blog.lemberg.co.uk/how-guide-obdii-reader-app-development
 
     @Override
     public void run() {
@@ -51,6 +52,17 @@ public class RunThread implements Runnable {
             new LineFeedOffObdCommand().run(socket.getInputStream(), socket.getOutputStream());
             new TimeoutObdCommand(30).run(socket.getInputStream(), socket.getOutputStream());
             new SelectProtocolObdCommand(ObdProtocols.AUTO).run(socket.getInputStream(), socket.getOutputStream());
+
+            // Get the VIN
+            final VinCommand vinCommand = new VinCommand();
+            vinCommand.run(socket.getInputStream(), socket.getOutputStream());
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    TextView tv = (TextView) mContext.findViewById(R.id.vehicle_id);
+                    tv.setText("VIN: " + vinCommand.getFormattedResult());
+                }
+            });
 
             final EngineRuntimeObdCommand engineRuntimeCommand = new EngineRuntimeObdCommand();
             while (!Thread.currentThread().isInterrupted()) {
