@@ -47,15 +47,23 @@ public class RunThread implements Runnable {
             BluetoothSocket socket = device.createInsecureRfcommSocketToServiceRecord(uuid);
             socket.connect();
 
+            LogInputStream inStream = new LogInputStream(socket.getInputStream());
+            LogOutputStream outStream = new LogOutputStream(socket.getOutputStream());
+
             // Do some basic initialization
-            new EchoOffObdCommand().run(socket.getInputStream(), socket.getOutputStream());
-            new LineFeedOffObdCommand().run(socket.getInputStream(), socket.getOutputStream());
-            new TimeoutObdCommand(30).run(socket.getInputStream(), socket.getOutputStream());
-            new SelectProtocolObdCommand(ObdProtocols.AUTO).run(socket.getInputStream(), socket.getOutputStream());
+            new EchoOffObdCommand().run(inStream, outStream);
+            inStream.flush();
+            new LineFeedOffObdCommand().run(inStream, outStream);
+            inStream.flush();
+            new TimeoutObdCommand(30).run(inStream, outStream);
+            inStream.flush();
+            new SelectProtocolObdCommand(ObdProtocols.AUTO).run(inStream, outStream);
+            inStream.flush();
 
             // Get the VIN
             final VinCommand vinCommand = new VinCommand();
-            vinCommand.run(socket.getInputStream(), socket.getOutputStream());
+            vinCommand.run(inStream, outStream);
+            inStream.flush();
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -66,7 +74,8 @@ public class RunThread implements Runnable {
 
             final EngineRuntimeObdCommand engineRuntimeCommand = new EngineRuntimeObdCommand();
             while (!Thread.currentThread().isInterrupted()) {
-                engineRuntimeCommand.run(socket.getInputStream(), socket.getOutputStream());
+                engineRuntimeCommand.run(inStream, outStream);
+                inStream.flush();
 
                 // TODO handle commands result
                 Log.d(TAG, "Runtime: " + engineRuntimeCommand.getFormattedResult());
