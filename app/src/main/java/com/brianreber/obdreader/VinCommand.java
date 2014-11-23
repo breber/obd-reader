@@ -18,6 +18,25 @@ public class VinCommand extends ObdCommand {
 
     @Override
     protected void fillBuffer() {
+        String workingData = getResult().replaceAll("[\r\n]", "");
+
+        // ignore first two bytes [XX XX] of the response
+        // as well as the first ':'
+        workingData = workingData.substring(4);
+
+        // At least for Ford Focus, this is formatted as
+        // 3 blocks split by ':'
+        String[] splits = workingData.split(":");
+
+        for (String split : splits) {
+            int begin = 0;
+            int end = 2;
+            while (end <= rawData.length()) {
+                buffer.add(Integer.decode("0x" + rawData.substring(begin, end)));
+                begin = end;
+                end += 2;
+            }
+        }
     }
 
     @Override
@@ -33,17 +52,17 @@ public class VinCommand extends ObdCommand {
         }
 
         rawData = res.toString().trim();
+        rawData = rawData.replace("SEARCHING...", "");
+        rawData = rawData.trim();
     }
 
     @Override
     protected void performCalculations() {
-        String workingData = getResult().replaceAll("[\r\n]", "");
+        mVin = new StringBuilder();
 
         // ignore first two bytes [XX XX] of the response
-        for (int i = 0; i < workingData.length(); i++) {
-            mVin.append((char) workingData.charAt(i));
-
-//            mVin.append((char) Integer.parseInt("" + workingData.charAt(i), 16));
+        for (int i = 0; i < buffer.size(); i++) {
+            mVin.append((char) buffer.get(i).intValue());
         }
     }
 
