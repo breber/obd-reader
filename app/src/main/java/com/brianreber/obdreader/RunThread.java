@@ -6,16 +6,36 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import pt.lighthouselabs.obd.commands.ObdCommand;
+import pt.lighthouselabs.obd.commands.control.DistanceTraveledSinceCodesClearedObdCommand;
+import pt.lighthouselabs.obd.commands.control.DtcNumberObdCommand;
+import pt.lighthouselabs.obd.commands.control.TroubleCodesObdCommand;
+import pt.lighthouselabs.obd.commands.engine.EngineLoadObdCommand;
+import pt.lighthouselabs.obd.commands.engine.EngineRPMObdCommand;
 import pt.lighthouselabs.obd.commands.engine.EngineRuntimeObdCommand;
+import pt.lighthouselabs.obd.commands.engine.MassAirFlowObdCommand;
+import pt.lighthouselabs.obd.commands.engine.ThrottlePositionObdCommand;
+import pt.lighthouselabs.obd.commands.fuel.FindFuelTypeObdCommand;
+import pt.lighthouselabs.obd.commands.fuel.FuelConsumptionRateObdCommand;
+import pt.lighthouselabs.obd.commands.fuel.FuelEconomyObdCommand;
+import pt.lighthouselabs.obd.commands.fuel.FuelLevelObdCommand;
+import pt.lighthouselabs.obd.commands.pressure.BarometricPressureObdCommand;
+import pt.lighthouselabs.obd.commands.pressure.FuelPressureObdCommand;
+import pt.lighthouselabs.obd.commands.pressure.IntakeManifoldPressureObdCommand;
 import pt.lighthouselabs.obd.commands.protocol.EchoOffObdCommand;
 import pt.lighthouselabs.obd.commands.protocol.LineFeedOffObdCommand;
 import pt.lighthouselabs.obd.commands.protocol.SelectProtocolObdCommand;
 import pt.lighthouselabs.obd.commands.protocol.TimeoutObdCommand;
+import pt.lighthouselabs.obd.commands.temperature.AirIntakeTemperatureObdCommand;
+import pt.lighthouselabs.obd.commands.temperature.AmbientAirTemperatureObdCommand;
+import pt.lighthouselabs.obd.commands.temperature.EngineCoolantTemperatureObdCommand;
 import pt.lighthouselabs.obd.enums.ObdProtocols;
 
 /**
@@ -26,14 +46,42 @@ public class RunThread implements Runnable {
     private static final String TAG = "RunThread";
     private String mDeviceAddress;
     private Activity mContext;
+    private List<ObdCommand> mObdCommands = new ArrayList<ObdCommand>();
 
     public RunThread(Activity activity, String deviceAddress) {
         mContext = activity;
         mDeviceAddress = deviceAddress;
+
+        addCommands();
+    }
+
+    private void addCommands() {
+        mObdCommands.add(new AirIntakeTemperatureObdCommand());
+        mObdCommands.add(new AmbientAirTemperatureObdCommand());
+        mObdCommands.add(new EngineCoolantTemperatureObdCommand());
+        mObdCommands.add(new BarometricPressureObdCommand());
+        mObdCommands.add(new FuelPressureObdCommand());
+        mObdCommands.add(new IntakeManifoldPressureObdCommand());
+        mObdCommands.add(new FindFuelTypeObdCommand());
+        mObdCommands.add(new FuelConsumptionRateObdCommand());
+        mObdCommands.add(new FuelEconomyObdCommand());
+        mObdCommands.add(new FuelLevelObdCommand());
+//        mObdCommands.add(new FuelTrimObdCommand());
+        mObdCommands.add(new EngineLoadObdCommand());
+        mObdCommands.add(new EngineRPMObdCommand());
+        mObdCommands.add(new EngineRuntimeObdCommand());
+        mObdCommands.add(new MassAirFlowObdCommand());
+        mObdCommands.add(new ThrottlePositionObdCommand());
+//        mObdCommands.add(new CommandEquivRatioObdCommand());
+        mObdCommands.add(new DistanceTraveledSinceCodesClearedObdCommand());
+        mObdCommands.add(new DtcNumberObdCommand());
+//        mObdCommands.add(new TimingAdvanceObdCommand());
+        mObdCommands.add(new TroubleCodesObdCommand());
     }
 
     // See http://en.wikipedia.org/wiki/OBD-II_PIDs#Standard_PIDs
     // See http://blog.lemberg.co.uk/how-guide-obdii-reader-app-development
+    // See https://docs.google.com/spreadsheet/ccc?key=0Ajz-75u_7nEydFJxUG4yOVZ1NXJlcjNvdzdSTDdyY0E#gid=0
 
     @Override
     public void run() {
@@ -72,26 +120,34 @@ public class RunThread implements Runnable {
                 }
             });
 
-            final EngineRuntimeObdCommand engineRuntimeCommand = new EngineRuntimeObdCommand();
             while (!Thread.currentThread().isInterrupted()) {
-                engineRuntimeCommand.run(inStream, outStream);
-                inStream.flush();
+                final StringBuilder resultStr = new StringBuilder();
 
-                // TODO handle commands result
-                Log.d(TAG, "Runtime: " + engineRuntimeCommand.getFormattedResult());
+                for (ObdCommand cmd : mObdCommands) {
+                    cmd.run(inStream, outStream);
+                    inStream.flush();
+                    resultStr.append(cmd.getName() + ": " + cmd.getFormattedResult() + "\n");
+                }
 
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
                         TextView tv = (TextView) mContext.findViewById(R.id.main_text);
-                        tv.setText("Runtime: " + engineRuntimeCommand.getFormattedResult());
+                        tv.setText(resultStr.toString());
                     }
                 });
 
                 Thread.sleep(5000);
             }
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
         }
     }
 
