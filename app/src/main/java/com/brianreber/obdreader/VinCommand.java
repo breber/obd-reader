@@ -1,5 +1,8 @@
 package com.brianreber.obdreader;
 
+import java.io.IOException;
+import java.io.InputStream;
+
 import pt.lighthouselabs.obd.commands.ObdCommand;
 
 /**
@@ -14,10 +17,31 @@ public class VinCommand extends ObdCommand {
     }
 
     @Override
+    protected void fillBuffer() {
+    }
+
+    @Override
+    protected void readRawData(InputStream in) throws IOException {
+        byte b = 0;
+        StringBuilder res = new StringBuilder();
+
+        // read until '>' arrives
+        while ((char) (b = (byte) in.read()) != '>') {
+            if ((char) b != ' ') {
+                res.append((char) b);
+            }
+        }
+
+        rawData = res.toString().trim();
+    }
+
+    @Override
     protected void performCalculations() {
+        String workingData = getResult().replaceAll("[\r\n]", "");
+
         // ignore first two bytes [XX XX] of the response
-        for (int i = 2; i < 20; i++) {
-            mVin.append((char) buffer.get(i).intValue());
+        for (int i = 0; i < workingData.length(); i++) {
+            mVin.append((char) Integer.parseInt("" + workingData.charAt(i), 16));
         }
     }
 

@@ -82,6 +82,7 @@ public class RunThread implements Runnable {
     // See http://en.wikipedia.org/wiki/OBD-II_PIDs#Standard_PIDs
     // See http://blog.lemberg.co.uk/how-guide-obdii-reader-app-development
     // See https://docs.google.com/spreadsheet/ccc?key=0Ajz-75u_7nEydFJxUG4yOVZ1NXJlcjNvdzdSTDdyY0E#gid=0
+    // See https://github.com/openxc/vi-firmware/blob/next/src/obd2.cpp#L41
 
     @Override
     public void run() {
