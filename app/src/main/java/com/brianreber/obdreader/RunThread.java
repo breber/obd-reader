@@ -7,7 +7,6 @@ import android.bluetooth.BluetoothSocket;
 import android.os.Handler;
 import android.os.Looper;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -125,9 +124,17 @@ public class RunThread implements Runnable {
                 final StringBuilder resultStr = new StringBuilder();
 
                 for (ObdCommand cmd : mObdCommands) {
-                    cmd.run(inStream, outStream);
-                    inStream.flush();
-                    resultStr.append(cmd.getName() + ": " + cmd.getFormattedResult() + "\n");
+                    resultStr.append(cmd.getName() + ": ");
+                    try {
+                        cmd.run(inStream, outStream);
+                        inStream.flush();
+                        resultStr.append(cmd.getFormattedResult());
+                    } catch (final Exception e) {
+                        resultStr.append(e.getMessage());
+                        catchException(e);
+                    }
+                    resultStr.append('\n');
+                    Thread.sleep(1000);
                 }
 
                 runOnUiThread(new Runnable() {
@@ -141,18 +148,22 @@ public class RunThread implements Runnable {
                 Thread.sleep(5000);
             }
         } catch (final Exception e) {
-            e.printStackTrace();
-
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
-                }
-            });
+            catchException(e);
         }
     }
 
-    private static void runOnUiThread(Runnable runnable){
+    private void catchException(final Exception e) {
+        e.printStackTrace();
+
+//        runOnUiThread(new Runnable() {
+//            @Override
+//            public void run() {
+//                Toast.makeText(mContext, e.getMessage(), Toast.LENGTH_LONG).show();
+//            }
+//        });
+    }
+
+    private static void runOnUiThread(Runnable runnable) {
         final Handler uiHandler = new Handler(Looper.getMainLooper());
         uiHandler.post(runnable);
     }

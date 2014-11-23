@@ -10,7 +10,7 @@ import pt.lighthouselabs.obd.commands.ObdCommand;
  */
 public class VinCommand extends ObdCommand {
 
-    private StringBuilder mVin;
+    private StringBuilder mVin = new StringBuilder();
 
     public VinCommand() {
         super("09 02");
@@ -41,7 +41,9 @@ public class VinCommand extends ObdCommand {
 
         // ignore first two bytes [XX XX] of the response
         for (int i = 0; i < workingData.length(); i++) {
-            mVin.append((char) Integer.parseInt("" + workingData.charAt(i), 16));
+            mVin.append((char) workingData.charAt(i));
+
+//            mVin.append((char) Integer.parseInt("" + workingData.charAt(i), 16));
         }
     }
 
