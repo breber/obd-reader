@@ -116,10 +116,11 @@ public class RunThread implements Runnable {
                 @Override
                 public void run() {
                     TextView tv = (TextView) mContext.findViewById(R.id.vehicle_id);
-                    tv.setText("VIN: " + vinCommand.getFormattedResult());
+                    tv.setText(vinCommand.getName() + ": " + vinCommand.getFormattedResult());
                 }
             });
 
+            // Get the remainder of the data every 5 seconds
             while (!Thread.currentThread().isInterrupted()) {
                 final StringBuilder resultStr = new StringBuilder();
 

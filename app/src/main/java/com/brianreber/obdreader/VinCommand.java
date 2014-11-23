@@ -31,8 +31,8 @@ public class VinCommand extends ObdCommand {
         for (String split : splits) {
             int begin = 0;
             int end = 2;
-            while (end <= rawData.length()) {
-                buffer.add(Integer.decode("0x" + rawData.substring(begin, end)));
+            while (end <= split.length()) {
+                buffer.add(Integer.decode("0x" + split.substring(begin, end)));
                 begin = end;
                 end += 2;
             }
